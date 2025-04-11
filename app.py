@@ -1,4 +1,3 @@
-
 import streamlit as st
 import torch
 import torch.nn as nn
@@ -6,15 +5,34 @@ from torchvision import transforms
 from PIL import Image
 import numpy as np
 from tensorflow.keras.models import load_model
+import os
+import requests
 
 # Set title
 st.title("Stroke Patient Pain Intensity Detector")
 st.markdown("Upload a full-face image of a stroke patient. The app will detect the affected side and predict pain intensity using the unaffected side.")
 
-# Load models
+# Helper to download files from Google Drive
 @st.cache_resource
-def load_models():
+def download_models():
+    def gdrive_to_direct(gdrive_url):
+        file_id = gdrive_url.split("/d/")[1].split("/")[0]
+        return f"https://drive.google.com/uc?export=download&id={file_id}"
+
+    model_urls = {
+        "cnn_stroke_model.keras": "https://drive.google.com/file/d/13lGkGEez7waHwCvQSnHocvdfZBTrs5Gk/view?usp=drive_link",
+        "right_side_pain_model.pth": "https://drive.google.com/file/d/1fPcoYwk2KCefjvNmK3o1Hqh51CFvYn0H/view?usp=drive_link"
+    }
+
+    for filename, url in model_urls.items():
+        if not os.path.exists(filename):
+            direct_url = gdrive_to_direct(url)
+            r = requests.get(direct_url)
+            with open(filename, "wb") as f:
+                f.write(r.content)
+
     stroke_model = load_model("cnn_stroke_model.keras")
+
     class PainRegressor(nn.Module):
         def __init__(self):
             super(PainRegressor, self).__init__()
@@ -28,9 +46,10 @@ def load_models():
     pain_model = PainRegressor()
     pain_model.load_state_dict(torch.load("right_side_pain_model.pth", map_location=torch.device('cpu')))
     pain_model.eval()
+
     return stroke_model, pain_model
 
-stroke_model, pain_model = load_models()
+stroke_model, pain_model = download_models()
 
 # Image transform for pain model
 transform = transforms.Compose([
