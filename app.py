@@ -8,11 +8,10 @@ from tensorflow.keras.models import load_model
 import os
 import requests
 
-# Set title
 st.title("Stroke Patient Pain Intensity Detector")
 st.markdown("Upload a full-face image of a stroke patient. The app will detect the affected side and predict pain intensity using the unaffected side.")
+st.write("🔧 App started. Preparing to download models...")
 
-# Helper to download files from Hugging Face links
 @st.cache_resource
 def download_models():
     model_urls = {
@@ -22,10 +21,15 @@ def download_models():
 
     for filename, url in model_urls.items():
         if not os.path.exists(filename):
+            st.write(f"📥 Downloading {filename}...")
             r = requests.get(url)
             with open(filename, "wb") as f:
                 f.write(r.content)
+            st.write(f"✅ {filename} downloaded.")
+        else:
+            st.write(f"✔️ {filename} already exists.")
 
+    st.write("📦 Loading models...")
     stroke_model = load_model("cnn_stroke_model.keras")
 
     class PainRegressor(nn.Module):
@@ -41,12 +45,12 @@ def download_models():
     pain_model = PainRegressor()
     pain_model.load_state_dict(torch.load("right_side_pain_model.pth", map_location=torch.device('cpu')))
     pain_model.eval()
+    st.write("✅ Models loaded.")
 
     return stroke_model, pain_model
 
 stroke_model, pain_model = download_models()
 
-# Image transform for pain model
 transform = transforms.Compose([
     transforms.Resize((224, 224)),
     transforms.ToTensor(),
@@ -54,10 +58,10 @@ transform = transforms.Compose([
                          std=[0.229, 0.224, 0.225])
 ])
 
-# Upload image
 uploaded_file = st.file_uploader("Choose an image", type=["jpg", "jpeg", "png"])
 
 if uploaded_file is not None:
+    st.write("📷 Image uploaded. Processing...")
     full_image = Image.open(uploaded_file).convert("RGB")
     st.image(full_image, caption="Uploaded Full-Face Image", use_column_width=True)
 
@@ -66,17 +70,17 @@ if uploaded_file is not None:
     left_face = full_image.crop((0, 0, mid, h))
     right_face = full_image.crop((mid, 0, w, h))
 
-    # Stroke model prediction
     stroke_input = full_image.resize((128, 128))
     stroke_array = np.array(stroke_input).astype("float32") / 255.0
     stroke_array = np.expand_dims(stroke_array, axis=0)
+    st.write("🧠 Running stroke model prediction...")
     stroke_pred = stroke_model.predict(stroke_array)
     affected = int(np.round(stroke_pred[0][0]))
 
     unaffected_face = right_face if affected == 0 else left_face
     unaffected_tensor = transform(unaffected_face).unsqueeze(0)
 
-    # Pain prediction
+    st.write("📈 Predicting pain score...")
     with torch.no_grad():
         output = pain_model(unaffected_tensor)
         pspi_score = output.item()
