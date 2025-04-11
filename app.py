@@ -1,3 +1,5 @@
+!pip install tensorflow
+
 import streamlit as st
 import torch
 import torch.nn as nn
