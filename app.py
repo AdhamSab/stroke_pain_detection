@@ -1,5 +1,3 @@
-!pip install tensorflow
-
 import streamlit as st
 import torch
 import torch.nn as nn
@@ -14,12 +12,12 @@ import requests
 st.title("Stroke Patient Pain Intensity Detector")
 st.markdown("Upload a full-face image of a stroke patient. The app will detect the affected side and predict pain intensity using the unaffected side.")
 
-# Helper to download files from direct links
+# Helper to download files from Hugging Face links
 @st.cache_resource
 def download_models():
     model_urls = {
-        "cnn_stroke_model.keras": "https://drive.google.com/uc?export=download&id=13lGkGEez7waHwCvQSnHocvdfZBTrs5Gk",
-        "right_side_pain_model.pth": "https://drive.google.com/uc?export=download&id=1fPcoYwk2KCefjvNmK3o1Hqh51CFvYn0H"
+        "cnn_stroke_model.keras": "https://huggingface.co/AdhamQQ/cnn_stroke_model/resolve/main/cnn_stroke_model.keras",
+        "right_side_pain_model.pth": "https://huggingface.co/AdhamQQ/cnn_stroke_model/resolve/main/right_side_pain_model.pth"
     }
 
     for filename, url in model_urls.items():
