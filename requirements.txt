@@ -3,3 +3,4 @@ torch
 torchvision
 tensorflow
 Pillow
+requests
